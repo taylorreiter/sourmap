@@ -37,14 +37,16 @@ conda activate sourmap
 git clone https://github.com/taylorreiter/sourmap.git
 ```
 
-Build the abundance csv. Note that you'll need to replace the path to the signatures with whereever sourmash signatures live on your system.
+Build the abundance csv. 
+Note that you'll need to replace the path to the signatures with whereever sourmash signatures live on your system.
+Also note that you must currently supply the `scaled` value that is in the signatures (see [issue #5](https://github.com/taylorreiter/sourmap/issues/5) for what the error message looks like when you supply the wrong scaled value).
 
 ```
 cd sourmap/sourmap_rs
 cargo run --release -- abundance-matrix --scaled 2000 --from-file -o abundance.csv <(find ~/work/sourmash-bio/greyhound/data/gtdb-r95 -type f -iname "*GCA_005*")
 ```
 
-In R, run:
+In R, run the code below.
 (note that if you're on a mac and have RStudio installed you can use `open -na RStudio` from within your conda env to launch an R session within your conda env)
 
 ```
