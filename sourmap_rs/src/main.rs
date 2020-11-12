@@ -29,6 +29,27 @@ enum Cli {
         #[structopt(short = "s", long = "scaled", default_value = "1000")]
         scaled: usize,
     },
+    AbundanceMatrix {
+        /// Precomputed index or list of reference signatures
+        #[structopt(parse(from_os_str))]
+        siglist: PathBuf,
+
+        /// ksize
+        #[structopt(short = "k", long = "ksize", default_value = "31")]
+        ksize: u8,
+
+        /// scaled
+        #[structopt(short = "s", long = "scaled", default_value = "1000")]
+        scaled: usize,
+
+        /// The path for output
+        #[structopt(parse(from_os_str), short = "o", long = "output")]
+        output: PathBuf,
+
+        /// Is the index a list of signatures?
+        #[structopt(long = "--from-file")]
+        from_file: bool,
+    },
 }
 
 fn read_paths<P: AsRef<Path>>(paths_file: P) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
@@ -75,6 +96,27 @@ fn index<P: AsRef<Path>>(
     Ok(())
 }
 
+fn abundance_matrix<P: AsRef<Path>>(
+    siglist: P,
+    template: Sketch,
+    output: P,
+    from_file: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let revindex = if from_file {
+        info!("Loading siglist");
+        let search_sigs = read_paths(siglist)?;
+        info!("Loaded {} sig paths in siglist", search_sigs.len());
+
+        RevIndex::new(&search_sigs, &template, 0, None, false)
+    } else {
+        RevIndex::load(siglist, None)?
+    };
+
+    revindex.abundance_csv(output)?;
+
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
@@ -88,6 +130,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let template = build_template(ksize, scaled);
 
             index(siglist, template, output)?
+        }
+        Cli::AbundanceMatrix {
+            siglist,
+            ksize,
+            scaled,
+            output,
+            from_file,
+        } => {
+            let template = build_template(ksize, scaled);
+
+            abundance_matrix(siglist, template, output, from_file)?;
         }
     };
 

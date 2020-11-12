@@ -1,4 +1,6 @@
 use std::collections::{HashMap, HashSet};
+use std::fs::File;
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -183,5 +185,46 @@ impl RevIndex {
 
     pub fn template(&self) -> Sketch {
         self.template.clone()
+    }
+
+    pub fn abundance_csv<P: AsRef<Path>>(
+        &self,
+        output: P,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // FIXME: we actually want hashes as columns, datasets as rows
+        //        (but it is much easier to do hashes as rows, datasets as columns =] )
+        let mut out = BufWriter::new(File::create(output).unwrap());
+
+        // TODO: write header: hash, <enumerate dataset_ids>
+
+        let total_ids = self.sig_files.len();
+
+        for (hash, dataset_ids) in &self.hash_to_idx {
+            write!(out, "{}", hash)?;
+            let mut current_id = 0;
+            let mut sorted_ids: Vec<_> = dataset_ids.iter().collect();
+            sorted_ids.sort();
+
+            for (dataset_id, count) in sorted_ids {
+                //dbg!(dataset_id, count, current_id);
+                while current_id != *dataset_id {
+                    current_id += 1;
+                    if current_id >= total_ids {
+                        break;
+                    } else {
+                        write!(out, ",0")?;
+                    }
+                }
+                if current_id == *dataset_id {
+                    write!(out, ",{}", count)?;
+                }
+            }
+            for _ in current_id..total_ids {
+                write!(out, ",0")?;
+            }
+
+            writeln!(out)?;
+        }
+        Ok(())
     }
 }
