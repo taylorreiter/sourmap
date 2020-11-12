@@ -32,7 +32,7 @@ Build diffusion map.
 Install dependencies
 
 ```
-conda env create -n sourmap sourmash rust r-magrittr r-readr
+conda create -n sourmap sourmash rust r-magrittr r-readr
 conda activate sourmap
 git clone https://github.com/taylorreiter/sourmap.git
 ```
