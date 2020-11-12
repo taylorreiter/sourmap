@@ -25,7 +25,7 @@ Given the scale of sequencing data in the SRA, we aim to build diffusion maps in
 
 One day sourmap will be a snakemake pipeline, but not today! 
 Run instructions are below.
-From a set of signatures that live in a directory and contain a certain string, build an abundance. 
+From a set of signatures that live in a directory and contain a certain string, build an abundance csv. 
 Read this csv into R and transform to samples x features. 
 Build diffusion map. 
 
