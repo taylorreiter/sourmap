@@ -40,6 +40,7 @@ git clone https://github.com/taylorreiter/sourmap.git
 Build the abundance csv. Note that you'll need to replace the path to the signatures with whereever sourmash signatures live on your system.
 
 ```
+cd sourmap/sourmap_rs
 cargo run --release -- abundance-matrix --scaled 2000 --from-file -o abundance.csv <(find ~/work/sourmash-bio/greyhound/data/gtdb-r95 -type f -iname "*GCA_005*")
 ```
 
