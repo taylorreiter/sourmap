@@ -20,3 +20,38 @@ While we first plan to test diffusion maps on a small set of assembled genomes (
 Given the scale of sequencing data in the SRA, we aim to build diffusion maps in Rust to better control memory usage and performance.
 
 @taylorreiter @luizirber Nov 2020
+
+## how to run sourmap
+
+One day sourmap will be a snakemake pipeline, but not today! 
+Run instructions are below.
+From a set of signatures that live in a directory and contain a certain string, build an abundance. 
+Read this csv into R and transform to samples x features. 
+Build diffusion map. 
+
+Install dependencies
+
+```
+conda env create -n sourmap sourmash rust r-magrittr
+conda activate sourmap
+git clone https://github.com/taylorreiter/sourmap.git
+```
+
+Build the abundance csv. Note that you'll need to replace the path to the signatures with whereever sourmash signatures live on your system.
+
+```
+cargo run --release -- abundance-matrix --scaled 2000 --from-file -o abundance.csv <(find ~/work/sourmash-bio/greyhound/data/gtdb-r95 -type f -iname "*GCA_005*")
+```
+
+In R, run:
+(note that if you're on a mac and have RStudio installed you can use `open -na RStudio` from within your conda env to launch an R session within your conda env)
+
+```
+library(magrittr)
+source("build_dm.R")
+
+dm <- build_dm(abundance.csv)
+```
+
+
+
