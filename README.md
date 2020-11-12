@@ -32,7 +32,7 @@ Build diffusion map.
 Install dependencies
 
 ```
-conda env create -n sourmap sourmash rust r-magrittr
+conda env create -n sourmap sourmash rust r-magrittr r-readr
 conda activate sourmap
 git clone https://github.com/taylorreiter/sourmap.git
 ```
@@ -48,9 +48,12 @@ In R, run:
 
 ```
 library(magrittr)
+library(readr)
 source("build_dm.R")
 
-dm <- build_dm(abundance.csv)
+abund <- read_csv("abundance.csv")
+abund <- t(abund)  # this is only for the current implementation. Will be removed later.
+dm <- build_dm(abund)
 ```
 
 
