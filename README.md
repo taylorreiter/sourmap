@@ -44,6 +44,7 @@ Also note that you must currently supply the `scaled` value that is in the signa
 ```
 cd sourmap/sourmap_rs
 cargo run --release -- abundance-matrix --scaled 2000 --from-file -o abundance.csv <(find ~/work/sourmash-bio/greyhound/data/gtdb-r95 -type f -iname "*GCA_005*")
+cd ..
 ```
 
 In R, run the code below.
@@ -54,7 +55,7 @@ library(magrittr)
 library(readr)
 source("build_dm.R")
 
-abund <- read_csv("abundance.csv")
+abund <- read_csv("sourmap_rs/abundance.csv")
 abund <- t(abund)  # this is only for the current implementation. Will be removed later.
 dm <- build_dm(abund)
 ```
