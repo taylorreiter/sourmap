@@ -55,7 +55,7 @@ library(magrittr)
 library(readr)
 source("build_dm.R")
 
-abund <- read_csv("sourmap_rs/abundance.csv")
+abund <- read_csv("sourmap_rs/abundance.csv", col_names = F)
 abund <- t(abund)  # this is only for the current implementation. Will be removed later.
 dm <- build_dm(abund)
 ```
