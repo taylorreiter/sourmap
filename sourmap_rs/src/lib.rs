@@ -1,18 +1,17 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use log::info;
-use nohash_hasher::BuildNoHashHasher;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use sourmash::signature::Signature;
 use sourmash::sketch::minhash::KmerMinHash;
 use sourmash::sketch::Sketch;
 
-type HashToIdx = HashMap<u64, HashMap<usize, u64>, BuildNoHashHasher<u64>>;
+type HashToIdx = BTreeMap<u64, HashMap<usize, u64>>;
 
 #[derive(Serialize, Deserialize)]
 pub struct RevIndex {
@@ -25,18 +24,21 @@ pub struct RevIndex {
 impl RevIndex {
     pub fn load<P: AsRef<Path>>(
         index_path: P,
-        queries: Option<&[KmerMinHash]>,
+        _queries: Option<&[KmerMinHash]>,
     ) -> Result<RevIndex, Box<dyn std::error::Error>> {
         // TODO: avoid loading full revindex if query != None
         let (rdr, _) = niffler::from_path(index_path)?;
-        let mut revindex: RevIndex = serde_json::from_reader(rdr)?;
+        let revindex: RevIndex = serde_json::from_reader(rdr)?;
 
+        /*
         if let Some(qs) = queries {
             for q in qs {
                 let hashes: HashSet<u64> = q.iter_mins().cloned().collect();
-                revindex.hash_to_idx.retain(|hash, _| hashes.contains(hash));
+                todo!("btreemap doesn't implement retain")
+                //revindex.hash_to_idx.retain(|hash, _| hashes.contains(hash));
             }
         }
+        */
         Ok(revindex)
     }
 
@@ -84,7 +86,7 @@ impl RevIndex {
                 }
                 let search_mh = search_mh.unwrap();
 
-                let mut hash_to_idx = HashToIdx::with_hasher(BuildNoHashHasher::default());
+                let mut hash_to_idx = HashToIdx::default();
                 let mut add_to = |matched_hashes: Vec<(u64, u64)>, intersection| {
                     if !matched_hashes.is_empty() || intersection > threshold as u64 {
                         matched_hashes.into_iter().for_each(|(hash, count)| {
@@ -144,7 +146,7 @@ impl RevIndex {
                 }
             })
             .reduce(
-                || HashToIdx::with_hasher(BuildNoHashHasher::default()),
+                || HashToIdx::default(),
                 |a, b| {
                     let (small, mut large) = if a.len() > b.len() { (b, a) } else { (a, b) };
 
@@ -195,35 +197,47 @@ impl RevIndex {
         //        (but it is much easier to do hashes as rows, datasets as columns =] )
         let mut out = BufWriter::new(File::create(output).unwrap());
 
-        // TODO: write header: hash, <enumerate dataset_ids>
+        info!("Start writing header");
+        write!(out, "dataset")?;
+        for hash in self.hash_to_idx.keys() {
+            write!(out, ",{}", hash)?;
+        }
+        writeln!(out)?;
+        info!("Finished writing header");
 
-        let total_ids = self.sig_files.len();
+        let template = self.template();
 
-        for (hash, dataset_ids) in &self.hash_to_idx {
-            write!(out, "{}", hash)?;
-            let mut current_id = 0;
-            let mut sorted_ids: Vec<_> = dataset_ids.iter().collect();
-            sorted_ids.sort();
+        if let Some(datasets) = &self.ref_sigs {
+            for (i, dataset) in datasets.iter().enumerate() {
+                if i % 100 == 0 {
+                    info!("Processed {} reference sigs", i);
+                }
+                let name = dataset.name();
+                write!(out, "{}", name.split(' ').next().unwrap())?;
 
-            for (dataset_id, count) in sorted_ids {
-                //dbg!(dataset_id, count, current_id);
-                while current_id != *dataset_id {
-                    current_id += 1;
-                    if current_id >= total_ids {
-                        break;
+                let mh = if let Some(sketch) = dataset.select_sketch(&template) {
+                    if let Sketch::MinHash(mh) = sketch {
+                        mh
+                    } else {
+                        todo!("no matching mh?")
+                    }
+                } else {
+                    todo!("no matching mh?")
+                };
+
+                let abunds: HashMap<u64, u64> = mh.to_vec_abunds().into_iter().collect();
+                for hash in self.hash_to_idx.keys() {
+                    if let Some(count) = abunds.get(hash) {
+                        write!(out, ",{}", count)?;
                     } else {
                         write!(out, ",0")?;
                     }
                 }
-                if current_id == *dataset_id {
-                    write!(out, ",{}", count)?;
-                }
-            }
-            for _ in current_id..total_ids {
-                write!(out, ",0")?;
-            }
 
-            writeln!(out)?;
+                writeln!(out)?;
+            }
+        } else {
+            todo!("assuming preloaded sigs")
         }
         Ok(())
     }
