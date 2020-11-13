@@ -43,7 +43,7 @@ Also note that you must currently supply the `scaled` value that is in the signa
 
 ```
 cd sourmap/sourmap_rs
-cargo run --release -- abundance-matrix --scaled 2000 --from-file -o abundance.csv <(find ~/work/sourmash-bio/greyhound/data/gtdb-r95 -type f -iname "*GCA_005*")
+cargo run --release -- abundance-matrix -k 21 --scaled 2000 --from-file -o abundance.csv <(find ~/work/sourmash-bio/greyhound/data/gtdb-r95 -type f -iname "*GCA_005*")
 cd ..
 ```
 
