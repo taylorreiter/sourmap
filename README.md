@@ -56,8 +56,10 @@ library(readr)
 source("build_dm.R")
 
 abund <- read_csv("sourmap_rs/abundance.csv", col_names = F)
-abund <- t(abund)  # this is only for the current implementation. Will be removed later.
-dm <- build_dm(abund)
+abund <- t(abund)             # transpose to sample x feature. this is only for the current implementation. Will be removed later.
+colnames(abund) <- abund[1, ] # make the hashes the column names
+abund <- abund[-1,]           # remove the row of hashes
+dm <- build_dm(abund)         # build the diffusion map
 ```
 
 
