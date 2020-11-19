@@ -50,34 +50,42 @@ get_laplac <- function(mat){
 }
 
 ## build diffusion map
-build_dm <- function(mat, k_nbhrs = 10, keep_eig = 10){
+build_dm <- function(mat, k_nbhrs = 10, keep_eig = 1000){
   require(magrittr)
   ## as implemented here: https://doi.org/10.6084/m9.figshare.12864011.v4
   nm <- mat %>% norm_mat()        # normalize
+  print("matrix normalized. making affinity matrix")
   aff <- nm %>%
     get_euc(., n.threads = 1) %>% 
     threshold(., top_k = k_nbhrs) # make affinity matrix
+  print("affinity matrix made. computing laplacian.")
   Lij <- aff %>% get_laplac()     # compute laplacian
+  print("laplacian made. making smallest keig")
   eig <- eigen(Lij)               # smallest keig vectors
+  print("getting eigenvalues")
   evl <- eig$values %>%           # get eigenvalues
     Re() %>%
     round(., digits = 10)
+  print("getting eigenvectors")
   evc <- eig$vectors %>%          # get eigenvectors
     Re() %>%
     round(., digits = 10)
   
   # create objects containing diffusion components
+  print("retrieving diffusion components")
   for(d in 1:length(evl)){
     assign(paste('dim', d, sep = '_'),
            Re(evc[, rank(evl) == (d + 1)])
     )
   }
   k_eig <- keep_eig               # specify num of variables you want to keep
+  print("returning diffusion components")
   dat <- do.call(mapply, c(FUN = cbind, mget(paste0("dim_", 1:(k_eig))))) %>%
     t() %>%
     as.data.frame()               # merge in array
   
   # make column names pretty
+  print("making dataframe pretty")
   colnames(dat) <- paste0("DC", 1:ncol(dat))
   return(dat)
 }
