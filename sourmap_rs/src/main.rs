@@ -107,7 +107,7 @@ fn abundance_matrix<P: AsRef<Path>>(
         let search_sigs = read_paths(siglist)?;
         info!("Loaded {} sig paths in siglist", search_sigs.len());
 
-        RevIndex::new(&search_sigs, &template, 0, None, false)
+        RevIndex::new(&search_sigs, &template, 0, None, true)
     } else {
         RevIndex::load(siglist, None)?
     };
